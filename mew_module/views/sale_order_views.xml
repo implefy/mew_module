@@ -7,26 +7,35 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
-            <!-- Add payment info section before the notebook -->
+            <!-- Add amount remaining after payment term -->
             <xpath expr="//field[@name='payment_term_id']" position="after">
-                <field name="amount_paid" widget="monetary"/>
                 <field name="amount_remaining" widget="monetary"/>
             </xpath>
 
-            <!-- Add buttons in the header -->
-            <xpath expr="//button[@name='action_quotation_send']" position="before">
+            <!-- Add stat button for transactions -->
+            <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_transactions"
                         type="object"
                         class="oe_stat_button"
                         icon="fa-credit-card"
-                        invisible="payment_transaction_count == 0">
-                    <field name="payment_transaction_count" widget="statinfo" string="Transactions"/>
+                        invisible="not transaction_ids">
+                    <field name="transaction_ids" invisible="1"/>
+                    <div class="o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="amount_paid" widget="monetary"/>
+                        </span>
+                        <span class="o_stat_text">Paid</span>
+                    </div>
                 </button>
+            </xpath>
+
+            <!-- Add Register Payment button -->
+            <xpath expr="//button[@name='action_quotation_send']" position="after">
                 <button name="action_register_payment"
                         type="object"
-                        class="btn-secondary"
                         string="Register Payment"
-                        invisible="amount_remaining &lt;= 0"/>
+                        class="btn-secondary"
+                        invisible="amount_remaining &lt;= 0 or state == 'cancel'"/>
             </xpath>
         </field>
     </record>
@@ -38,8 +47,21 @@
         <field name="inherit_id" ref="sale.view_quotation_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='amount_total']" position="after">
-                <field name="amount_paid" optional="show"/>
-                <field name="amount_remaining" optional="show"/>
+                <field name="amount_paid" optional="show" widget="monetary"/>
+                <field name="amount_remaining" optional="show" widget="monetary"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Also add to sale order tree (confirmed orders) -->
+    <record id="view_sale_order_tree_inherit_partial_payment" model="ir.ui.view">
+        <field name="name">sale.order.tree.sale.inherit.partial.payment</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="amount_paid" optional="show" widget="monetary"/>
+                <field name="amount_remaining" optional="show" widget="monetary"/>
             </xpath>
         </field>
     </record>
