@@ -1,19 +1,21 @@
 {
     'name': 'Ecommerce Partial Payment',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Website/Website',
     'summary': 'Add partial payment option to ecommerce checkout',
     'description': """
         Ecommerce Partial Payment for Odoo 19
         ======================================
         This module adds the ability for customers to make partial payments
-        during the ecommerce checkout process, similar to the portal sale order
-        partial payment functionality.
+        during the ecommerce checkout process.
 
         Features:
         - Partial payment option on checkout payment page
         - Custom amount input with validation
-        - Remaining balance tracking
+        - Payment tracking (amount paid / remaining) on sale orders
+        - Register manual payments from backend
+        - Auto-confirm orders on payment (including wire transfer)
+        - View payment transactions from sale order
     """,
     'author': 'Your Company',
     'website': 'https://www.yourcompany.com',
@@ -25,6 +27,8 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'views/sale_order_views.xml',
+        'views/wizard_views.xml',
         'views/templates.xml',
     ],
     'assets': {

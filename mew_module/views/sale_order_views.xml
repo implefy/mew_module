@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Sale Order Form View - Add payment info -->
+    <record id="view_order_form_inherit_partial_payment" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.partial.payment</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Add payment info section before the notebook -->
+            <xpath expr="//field[@name='payment_term_id']" position="after">
+                <field name="amount_paid" widget="monetary"/>
+                <field name="amount_remaining" widget="monetary"/>
+            </xpath>
+
+            <!-- Add buttons in the header -->
+            <xpath expr="//button[@name='action_quotation_send']" position="before">
+                <button name="action_view_transactions"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-credit-card"
+                        invisible="payment_transaction_count == 0">
+                    <field name="payment_transaction_count" widget="statinfo" string="Transactions"/>
+                </button>
+                <button name="action_register_payment"
+                        type="object"
+                        class="btn-secondary"
+                        string="Register Payment"
+                        invisible="amount_remaining &lt;= 0"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Sale Order Tree View - Add payment columns -->
+    <record id="view_order_tree_inherit_partial_payment" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.partial.payment</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="amount_paid" optional="show"/>
+                <field name="amount_remaining" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
