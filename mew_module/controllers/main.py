@@ -16,7 +16,7 @@ class WebsiteSalePartialPay(WebsiteSale):
         """Override to add partial payment context to payment page."""
         response = super().shop_payment(**post)
 
-        order = request.website.sale_get_order()
+        order = request.cart
         if order and order.amount_total > 0:
             # Add partial payment data to qcontext
             if hasattr(response, 'qcontext'):
@@ -36,7 +36,7 @@ class WebsiteSalePartialPay(WebsiteSale):
     )
     def set_partial_payment_amount(self, amount=None, **kwargs):
         """Store the partial payment amount in session for payment processing."""
-        order = request.website.sale_get_order()
+        order = request.cart
         if not order:
             return {'error': 'No order found'}
 
@@ -85,7 +85,7 @@ class WebsiteSalePartialPay(WebsiteSale):
     )
     def get_partial_payment_amount(self, **kwargs):
         """Get current partial payment amount from session."""
-        order = request.website.sale_get_order()
+        order = request.cart
         if not order:
             return {'error': 'No order found'}
 
