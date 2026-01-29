@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nRestructure module to follow Odoo 19 conventions\n\nMove all module files into mew_module/ subfolder to match\nstandard Odoo module structure where the module folder is\nnested inside the repository root.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix internal server error issues\n\n- Add proper route decorator to shop_payment override\n- Replace non-existent ''require_payment'' field with amount_total check\n- Fix session access in sale_order model using request.session\n- Add error handling for when no request context is available\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(gh api:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

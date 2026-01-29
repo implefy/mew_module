@@ -25,3 +25,15 @@ class SaleOrder(models.Model):
         if amount > self.amount_total:
             return False, 'Amount cannot exceed order total'
         return True, ''
+
+    def _has_to_be_paid(self):
+        """Override to allow confirmation with partial payments."""
+        self.ensure_one()
+        # If there's a partial payment in session, consider the order payable
+        try:
+            partial_amount = request.session.get('partial_payment_amount')
+            if partial_amount:
+                return True
+        except RuntimeError:
+            pass
+        return super()._has_to_be_paid()

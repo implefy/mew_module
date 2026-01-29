@@ -22,6 +22,23 @@ publicWidget.registry.PartialPaymentWidget = publicWidget.Widget.extend({
         this.$errorDiv = this.$('#partial_error');
         this.maxAmount = parseFloat(this.$amountInput.data('max')) || 0;
         this.currencyId = this.$amountInput.data('currency');
+
+        // Check if partial payment was previously set
+        this._checkExistingPartialAmount();
+    },
+
+    async _checkExistingPartialAmount() {
+        try {
+            const result = await rpc('/shop/payment/get_partial_amount', {});
+            if (result.partial_amount) {
+                this.$partialPayment.prop('checked', true);
+                this.$amountWrapper.show();
+                this.$amountInput.val(result.partial_amount);
+                this._validateAndShowRemaining(result.partial_amount);
+            }
+        } catch (error) {
+            console.error('Failed to get partial amount:', error);
+        }
     },
 
     _onPaymentTypeChange(ev) {
@@ -90,11 +107,8 @@ publicWidget.registry.PartialPaymentWidget = publicWidget.Widget.extend({
             if (result.error) {
                 this.$errorDiv.text(result.error).show();
             } else {
-                // Trigger event for payment form to update
-                this.trigger_up('partial_amount_changed', {
-                    amount: result.amount,
-                    remaining: result.remaining || 0,
-                });
+                // Reload page to update payment form with new amount
+                window.location.reload();
             }
         } catch (error) {
             console.error('Failed to set partial payment amount:', error);
