@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Extend the payment page to add partial payment option -->
+    <template id="partial_payment_option" inherit_id="website_sale.payment" name="Partial Payment Option">
+        <xpath expr="//div[@id='payment_method']" position="before">
+            <t t-if="website_sale_order and website_sale_order.require_payment">
+                <div class="card mb-3" id="partial_payment_section">
+                    <div class="card-header">
+                        <h5 class="mb-0">Payment Amount</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="payment_type"
+                                   id="full_payment" value="full" checked="checked"/>
+                            <label class="form-check-label" for="full_payment">
+                                Pay full amount:
+                                <strong t-esc="website_sale_order.amount_total"
+                                        t-options="{'widget': 'monetary', 'display_currency': website_sale_order.currency_id}"/>
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="payment_type"
+                                   id="partial_payment" value="partial"/>
+                            <label class="form-check-label" for="partial_payment">
+                                Pay a different amount
+                            </label>
+                        </div>
+                        <div class="partial-amount-input ms-4" id="partial_amount_wrapper" style="display: none;">
+                            <div class="input-group" style="max-width: 250px;">
+                                <span class="input-group-text" t-esc="website_sale_order.currency_id.symbol"/>
+                                <input type="number" class="form-control" id="partial_amount_input"
+                                       step="0.01" min="0.01"
+                                       t-att-max="website_sale_order.amount_total"
+                                       t-att-data-max="website_sale_order.amount_total"
+                                       t-att-data-currency="website_sale_order.currency_id.id"
+                                       placeholder="Enter amount"/>
+                            </div>
+                            <small class="text-muted mt-1 d-block">
+                                Order total:
+                                <span t-esc="website_sale_order.amount_total"
+                                      t-options="{'widget': 'monetary', 'display_currency': website_sale_order.currency_id}"/>
+                            </small>
+                            <div id="partial_remaining" class="text-info mt-1" style="display: none;">
+                                Remaining after payment: <span id="remaining_amount"></span>
+                            </div>
+                            <div id="partial_error" class="text-danger mt-1" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>
