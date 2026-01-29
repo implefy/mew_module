@@ -5,20 +5,24 @@ from odoo.addons.website_sale.controllers.main import WebsiteSale
 
 class WebsiteSalePartialPay(WebsiteSale):
 
-    @http.route()
+    @http.route(
+        ['/shop/payment'],
+        type='http',
+        auth='public',
+        website=True,
+        sitemap=False
+    )
     def shop_payment(self, **post):
         """Override to add partial payment context to payment page."""
         response = super().shop_payment(**post)
 
         order = request.website.sale_get_order()
-        if order and order.require_payment:
+        if order and order.amount_total > 0:
             # Add partial payment data to qcontext
             if hasattr(response, 'qcontext'):
                 response.qcontext.update({
                     'partial_payment_enabled': True,
                     'order_amount_total': order.amount_total,
-                    'order_amount_paid': order.amount_paid if hasattr(order, 'amount_paid') else 0.0,
-                    'order_amount_residual': order.amount_total - (order.amount_paid if hasattr(order, 'amount_paid') else 0.0),
                     'currency': order.currency_id,
                 })
 
@@ -36,8 +40,8 @@ class WebsiteSalePartialPay(WebsiteSale):
         if not order:
             return {'error': 'No order found'}
 
-        if not order.require_payment:
-            return {'error': 'Partial payment not enabled for this order'}
+        if order.amount_total <= 0:
+            return {'error': 'No amount to pay for this order'}
 
         if amount is None:
             # Clear partial amount, use full amount
@@ -90,7 +94,7 @@ class WebsiteSalePartialPay(WebsiteSale):
         return {
             'partial_amount': partial_amount,
             'order_total': order.amount_total,
-            'partial_enabled': order.require_payment,
+            'partial_enabled': order.amount_total > 0,
             'currency_id': order.currency_id.id,
             'currency_symbol': order.currency_id.symbol,
         }

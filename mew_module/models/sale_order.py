@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.http import request
 
 
 class SaleOrder(models.Model):
@@ -7,9 +8,13 @@ class SaleOrder(models.Model):
     def _get_partial_payment_amount(self):
         """Get the partial payment amount from session or return full amount."""
         self.ensure_one()
-        partial_amount = self.env['ir.http']._request_session().get('partial_payment_amount')
-        if partial_amount and self.require_payment:
-            return min(float(partial_amount), self.amount_total)
+        try:
+            partial_amount = request.session.get('partial_payment_amount')
+            if partial_amount and self.amount_total > 0:
+                return min(float(partial_amount), self.amount_total)
+        except RuntimeError:
+            # No request context available (e.g., in cron jobs)
+            pass
         return self.amount_total
 
     def _validate_partial_payment_amount(self, amount):

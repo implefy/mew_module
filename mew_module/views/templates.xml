@@ -4,7 +4,7 @@
     <!-- Extend the payment page to add partial payment option -->
     <template id="partial_payment_option" inherit_id="website_sale.payment" name="Partial Payment Option">
         <xpath expr="//div[@id='payment_method']" position="before">
-            <t t-if="website_sale_order and website_sale_order.require_payment">
+            <t t-if="website_sale_order and website_sale_order.amount_total > 0">
                 <div class="card mb-3" id="partial_payment_section">
                     <div class="card-header">
                         <h5 class="mb-0">Payment Amount</h5>
