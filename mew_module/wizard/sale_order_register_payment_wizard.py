@@ -42,7 +42,6 @@ class SaleOrderRegisterPaymentWizard(models.TransientModel):
     @api.depends('order_id')
     def _compute_pending_transaction(self):
         for wizard in self:
-            # Find pending transaction for this order (e.g., wire transfer waiting for confirmation)
             pending_tx = wizard.order_id.transaction_ids.filtered(
                 lambda tx: tx.state == 'pending'
             )
@@ -53,6 +52,42 @@ class SaleOrderRegisterPaymentWizard(models.TransientModel):
         if self.order_id:
             self.currency_id = self.order_id.currency_id
             self.amount = self.order_id.amount_remaining
+
+    def _get_payment_provider_and_method(self):
+        """Get a suitable payment provider and method for manual payments."""
+        company = self.order_id.company_id
+
+        # Try wire transfer first
+        wire_provider = self.env['payment.provider'].search([
+            ('code', '=', 'wire_transfer'),
+            ('state', 'in', ['enabled', 'test']),
+            ('company_id', '=', company.id),
+        ], limit=1)
+
+        if wire_provider:
+            # Get payment method for wire transfer
+            payment_method = self.env['payment.method'].search([
+                ('provider_ids', 'in', wire_provider.ids),
+                ('active', '=', True),
+            ], limit=1)
+            if payment_method:
+                return wire_provider, payment_method
+
+        # Fallback to any enabled provider with a payment method
+        providers = self.env['payment.provider'].search([
+            ('state', 'in', ['enabled', 'test']),
+            ('company_id', '=', company.id),
+        ])
+
+        for provider in providers:
+            payment_method = self.env['payment.method'].search([
+                ('provider_ids', 'in', provider.ids),
+                ('active', '=', True),
+            ], limit=1)
+            if payment_method:
+                return provider, payment_method
+
+        return None, None
 
     def action_register_payment(self):
         """Confirm pending transaction or create new one and mark as done."""
@@ -72,32 +107,25 @@ class SaleOrderRegisterPaymentWizard(models.TransientModel):
             # Confirm the existing pending transaction
             tx = pending_tx[0]
             if self.amount != tx.amount:
-                # Update amount if different
                 tx.amount = self.amount
             tx._set_done(state_message=_('Payment confirmed manually on %s. Reference: %s') % (
                 self.payment_date, self.payment_reference or 'N/A'
             ))
         else:
             # Create a new transaction for manual payment
-            wire_provider = self.env['payment.provider'].search([
-                ('code', '=', 'wire_transfer'),
-                ('state', 'in', ['enabled', 'test']),
-                ('company_id', '=', self.order_id.company_id.id),
-            ], limit=1)
+            provider, payment_method = self._get_payment_provider_and_method()
 
-            if not wire_provider:
-                wire_provider = self.env['payment.provider'].search([
-                    ('state', 'in', ['enabled', 'test']),
-                    ('company_id', '=', self.order_id.company_id.id),
-                ], limit=1)
-
-            if not wire_provider:
-                raise UserError(_('No payment provider available. Please configure a payment provider.'))
+            if not provider or not payment_method:
+                raise UserError(_(
+                    'No payment provider with a payment method available.\n'
+                    'Please configure a payment provider (e.g., Wire Transfer) with at least one payment method.'
+                ))
 
             reference = self.payment_reference or f'{self.order_id.name}-MANUAL-{fields.Datetime.now().strftime("%Y%m%d%H%M%S")}'
 
             tx = self.env['payment.transaction'].create({
-                'provider_id': wire_provider.id,
+                'provider_id': provider.id,
+                'payment_method_id': payment_method.id,
                 'amount': self.amount,
                 'currency_id': self.currency_id.id,
                 'partner_id': self.order_id.partner_id.id,
