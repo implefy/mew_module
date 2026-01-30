@@ -5,18 +5,46 @@ from odoo.http import request
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    # Only add amount_remaining since amount_paid already exists in Odoo
+    # Payment tracking fields
+    amount_pending = fields.Monetary(
+        string='Amount Pending',
+        compute='_compute_payment_amounts',
+        store=True,
+        currency_field='currency_id',
+        help='Amount from pending transactions (e.g., wire transfer awaiting confirmation)',
+    )
     amount_remaining = fields.Monetary(
         string='Amount Remaining',
-        compute='_compute_amount_remaining',
+        compute='_compute_payment_amounts',
         store=True,
         currency_field='currency_id',
     )
+    transaction_count = fields.Integer(
+        string='Transaction Count',
+        compute='_compute_transaction_count',
+    )
+    pending_transaction_count = fields.Integer(
+        string='Pending Transactions',
+        compute='_compute_transaction_count',
+    )
 
-    @api.depends('amount_total', 'amount_paid')
-    def _compute_amount_remaining(self):
+    @api.depends('amount_total', 'amount_paid', 'transaction_ids.state', 'transaction_ids.amount')
+    def _compute_payment_amounts(self):
         for order in self:
-            order.amount_remaining = order.amount_total - order.amount_paid
+            pending = sum(
+                tx.amount for tx in order.transaction_ids
+                if tx.state == 'pending'
+            )
+            order.amount_pending = pending
+            order.amount_remaining = order.amount_total - order.amount_paid - pending
+
+    @api.depends('transaction_ids', 'transaction_ids.state')
+    def _compute_transaction_count(self):
+        for order in self:
+            order.transaction_count = len(order.transaction_ids)
+            order.pending_transaction_count = len(
+                order.transaction_ids.filtered(lambda tx: tx.state == 'pending')
+            )
 
     def _is_confirmation_amount_reached(self):
         """Override to allow any payment to confirm the order.
@@ -67,7 +95,7 @@ class SaleOrder(models.Model):
             'target': 'new',
             'context': {
                 'default_order_id': self.id,
-                'default_amount': self.amount_remaining,
+                'default_amount': self.amount_remaining + self.amount_pending,
                 'default_currency_id': self.currency_id.id,
             },
         }

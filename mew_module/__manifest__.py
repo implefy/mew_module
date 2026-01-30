@@ -1,6 +1,6 @@
 {
     'name': 'Ecommerce Partial Payment',
-    'version': '19.0.1.4.0',
+    'version': '19.0.1.5.0',
     'category': 'Website/Website',
     'summary': 'Add partial payment option to ecommerce checkout',
     'description': """
