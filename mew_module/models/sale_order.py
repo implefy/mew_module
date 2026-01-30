@@ -22,11 +22,16 @@ class SaleOrder(models.Model):
         """Override to allow any payment to confirm the order.
 
         By default, Odoo requires amount_paid >= prepayment_percent * amount_total.
-        We override this to confirm the order with any payment amount.
+        We override this to confirm the order when any transaction exists
+        (including pending transactions like wire transfer).
         """
         self.ensure_one()
-        # Any payment > 0 should confirm the order
-        return self.amount_paid > 0
+        # Check if there's any transaction with amount > 0 (any state)
+        has_transaction = any(
+            tx.amount > 0 for tx in self.transaction_ids
+            if tx.state not in ('cancel', 'error')
+        )
+        return has_transaction or self.amount_paid > 0
 
     def _get_partial_payment_amount(self):
         """Get the partial payment amount from session or return full amount."""
